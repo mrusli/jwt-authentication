@@ -1,5 +1,7 @@
 package com.bezkoder.springjwt.security.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,16 +14,25 @@ import com.bezkoder.springjwt.repository.UserRepository;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
-  @Autowired
-  UserRepository userRepository;
 
-  @Override
-  @Transactional
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
+	@Autowired
+	UserRepository userRepository;
 
-    return UserDetailsImpl.build(user);
-  }
+	private static final Logger logger = LoggerFactory.getLogger(UserDetailsImpl.class);
+	
+	public UserDetailsServiceImpl() {
+		super();
+
+		logger.info("UserDetailsServiceImpl implementing UserDetailsService");
+	}	
+	
+	@Override
+	@Transactional
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		User user = userRepository.findByUsername(username)
+			.orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
+
+		return UserDetailsImpl.build(user);
+	}
 
 }
