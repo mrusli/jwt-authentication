@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/test")
@@ -22,6 +24,13 @@ public class TestController {
 		return "User Content.";
 	}
 
+	@GetMapping("/main")
+	@PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
+	public String mainAccess(HttpServletResponse response) {
+		response.addHeader("Cache-Control", "max-age=60, must-revalidate, no-transform");
+		return "Main Access Page.";
+	}
+	
 	@GetMapping("/mod")
 	@PreAuthorize("hasRole('MODERATOR')")
 	public String moderatorAccess() {
@@ -36,7 +45,6 @@ public class TestController {
 
 	@GetMapping("/logout")
 	public String logout() {
-		return "logout";
+		return "Logout";
 	}
-
 }

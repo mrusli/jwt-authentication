@@ -2,11 +2,6 @@ package com.bezkoder.springjwt.security.jwt;
 
 import java.io.IOException;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +12,13 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.bezkoder.springjwt.repository.TokenRepository;
 import com.bezkoder.springjwt.security.services.UserDetailsServiceImpl;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 public class AuthTokenFilter extends OncePerRequestFilter {
 	@Autowired
@@ -26,6 +27,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 	@Autowired
 	private UserDetailsServiceImpl userDetailsService;
 
+	@Autowired
+	private TokenRepository tokenRepository;
+	
 	private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
 	@Override
@@ -36,7 +40,15 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 			String jwt = parseJwt(request);
 			if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
 		        String username = jwtUtils.getUserNameFromJwtToken(jwt);
-		
+		        
+		        var isTokenValid = tokenRepository.findByToken(jwt)
+		        		.map(t -> !t.isExpired() && !t.isRevoked())
+		        		.orElse(false);
+		        if (!isTokenValid) {
+					logger.error("Invalid Token: {}", jwt);
+					throw new Exception("Invalid Token");
+				}
+		        
 		        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 		        UsernamePasswordAuthenticationToken authentication =
 		            new UsernamePasswordAuthenticationToken(
@@ -48,7 +60,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 		        SecurityContextHolder.getContext().setAuthentication(authentication);
 			}
 		} catch (Exception e) {
-			logger.error("Cannot set user authentication: {}", e);
+			logger.error("Cannot set user authentication: {}", e.getMessage());
 		}
 
 		filterChain.doFilter(request, response);
